@@ -72,6 +72,7 @@
 | `kind` | | `song`(默认)或 `episode` |
 | `episode` | | `kind: "episode"` 时:`{ id, podcast: { id, title }, description?, published_ms? }`。节目 ID 与音频 ID 不同,`id` 仍是音频,`episode.id` 是节目 |
 | `comment_thread` | | 评论串标识(不透明字符串)。有它且来源声明了 `comments` 才显示评论页签 |
+| `url` | | 曲目在来源网站上的页面,用于「复制链接」 |
 | `extra` | | 见 §4.1 |
 
 `kind: "episode"` 的曲目照常播放;宿主据此额外提供「本机转写字幕」(见 [09](09-host-behavior.md))。

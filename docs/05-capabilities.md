@@ -44,11 +44,12 @@
 | `playlist.get` | `{ id, cursor? }` | `{ playlist, tracks: [Track], next? }` |
 | `artist.get` | `{ id }` | `{ artist, tabs: [Tab], first?: { tab, items, next? } }` |
 | `user.get` | `{ id }` | `{ user, tabs: [Tab], first?: { tab, items, next? } }` |
-| `tab.load` | `{ entity: { type, id }, tab, cursor? }` | `{ items, next? }` |
+| `tab.load` | `{ entity: { type, id, extra? }, tab, cursor? }` | `{ items, next? }` |
 
 - `first` 是第一个页签的内容,省去一次往返。省略则宿主随后调用 `tab.load`。
 - 声明了 `artist` / `user` 能力,但返回 `tabs: []` 是合法的(只有头部信息)。
 - `tab.load` 的 `items` 实体类型必须与 `Tab.type` 一致。
+- `entity.extra` 是 `artist.get` / `user.get` 返回的实体里的 `extra`,宿主原样带回。页签需要的来源私有数据(如艺人「动态」所属的账号)放在那里。
 
 ## 5.5 `lyrics`
 
@@ -93,7 +94,7 @@
 | `playlist.edit` | `playlist.create` | `{ title, private? }` | `{ playlist }` |
 | | `playlist.rename` | `{ id, title }` | `{}` |
 | | `playlist.delete` | `{ id }` | `{}` |
-| | `playlist.add_tracks` | `{ id, tracks: [Track] }` | `{}` |
+| | `playlist.add_tracks` | `{ id, tracks: [Track] }` | `{}`(曲目已在歌单里 → `conflict`) |
 | | `playlist.remove_tracks` | `{ id, tracks: [Track] }` | `{}` |
 
 - `library.liked_ids` 在登录后一次拉取,宿主据此给所有列表里的曲目画「喜欢」状态。曲目很多时它可能很大(≤ 8 MiB 信封内);拿不到全量的来源改用 `track.liked_state`(按页查询),二者实现一个即可,宿主两个都会尝试。
@@ -108,10 +109,10 @@
 | `radio.modes` | `{}` | `{ modes: [{ id, label }] }`,第一个是默认 |
 | `radio.next` | `{ mode }` | `{ tracks: [Track] }` |
 | `radio.dislike`(特性) | `{ track }` | `{}` |
-| `radio.similar`(特性) | `{ seed: Track, context?: { playlist_id? } }` | `{ tracks: [Track] }` |
+| `radio.similar`(特性) | `{ seed: Track, origin?: Track, context?: { playlist_id? } }` | `{ tracks: [Track] }` |
 
 - `radio.next` 每次返回下一批(通常 3–10 首);宿主在队列将尽时再调用。**电台的「游标」由插件自己维护**(存 kv 或会话),宿主不传。
-- `radio.similar` 是「以这首为种子的相似推荐」(网易云的心动模式)。
+- `radio.similar` 是「以这首为种子的相似推荐」(网易云的心动模式)。`seed` 是最近播放的一首,`origin` 是这一轮开始时的那首(省略时同 `seed`),`context.playlist_id` 是推荐所依据的歌单(用户的「我喜欢的音乐」)。
 
 ## 5.9 `comments`
 
