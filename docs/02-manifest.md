@@ -27,7 +27,7 @@
   "qualities": ["standard", "higher", "exhigh", "lossless", "hires"],
 
   "permissions": {
-    "network": { "hosts": ["music.163.com", "interface.music.163.com"] },
+    "network": { "hosts": ["music.163.com", "interfacepc.music.163.com"] },
     "media":   { "hosts": ["*.music.126.net", "http://*.music.126.net"] }
   },
 
@@ -114,8 +114,9 @@
 
 - `example.com`:仅 HTTPS、仅该主机。
 - `*.example.com`:任意子域,不含 `example.com` 自身。不允许单独的 `*`,也不允许 `*.com` 这类过宽的通配。
-- `http://example.com`:显式允许明文 HTTP。**未写协议一律只允许 HTTPS。**
-- 不允许端口、路径;端口一律是协议默认端口。
+- `http://example.com`:显式允许明文 HTTP **和** HTTPS。**未写协议一律只允许 HTTPS。**
+- 不允许端口、路径、用户信息;端口一律是协议默认端口(自建服务器要用别的端口,只能通过下面的「授权来源」)。
+- 不允许 IP 字面量(`127.0.0.1`、`10.0.0.1`、`0x7f.1`……),不允许基础部分是公共后缀的通配符(`*.github.io`、`*.co.uk`)。宿主在加载时用公共后缀列表检查,登记处 CI 同样检查。规范化规则见 [07 §7.3](07-security.md#73-网络目标的校验)。
 
 权限的完整含义与宿主如何强制执行见 [07 号文档](07-security.md)。**更新时权限扩大(新增主机、`local` 变为 `true`、新增能力)需要用户重新确认**,不会静默生效。
 
@@ -135,9 +136,16 @@
 
 | `type` | 说明 |
 |---|---|
-| `text` `number` `bool` `choice` | 普通项,存在插件的 kv 里 |
-| `url` | 同 `text`,宿主校验为 `http(s)` URL。`grant_network: true` 时,用户填入的主机会被**加入该插件的 `network.hosts`**(并在用户确认后允许局域网地址)。这是唯一一种「运行时扩大网络权限」的方式,因为主机是用户亲手输入的 |
-| `password` | 存入钥匙串而不是 kv,**不会出现在 `ctx.settings`**,插件用 `secret.get` 读取 |
+| `text` `number` `bool` `choice` | 普通项,存在宿主为该插件保存的设置里(插件读得到,**写不了**) |
+| `url` | 同 `text`,宿主校验为 `http(s)` URL。`grant_network: true` 的项是「授权来源」,规则见下 |
+| `password` | 存入宿主的加密保险库([07 §7.4](07-security.md#74-数据隔离与存储))而不是 kv,**不会出现在 `ctx.settings`**,插件用 `secret.get` 读取 |
+
+**授权来源(`grant_network`)的规则。** 它是唯一一种在运行时扩大网络权限的方式,所以限制很严:
+
+- 授权**只来自用户在设置界面里的编辑**。设置保存在宿主拥有的存储里,插件改不了;带 `grant_network` 的项**不允许有 `default`**(schema 会拒绝)。
+- 一次授权的单位是一个**源(origin)**:协议 + 主机 + 端口(自建服务器常用 `:4533`、`:8096`)。它同时加入该插件的 `network.hosts` 与 `media.hosts`——流和封面通常来自同一台服务器。
+- 确认对话框显示的是**用户输入的源本身**和解析出的地址类别(公网 / 局域网 / 本机),不是插件写的 `label`。局域网与本机地址需要用户在同一对话框里明确勾选。
+- 取消授权(清空该项)立即生效。
 
 登录相关的表单(扫码、短信验证码)不在这里,见 [06 号文档](06-auth.md)。
 

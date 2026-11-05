@@ -34,9 +34,9 @@
     "repository": { "type": "string", "format": "uri" },
     "homepage": { "type": "string", "format": "uri" },
     "license": { "type": "string", "minLength": 1 },
-    "icon": { "type": "string", "minLength": 1 },
-    "wasm": { "type": "string", "minLength": 1 },
-    "min_host": { "type": "string" },
+    "icon": { "type": "string", "pattern": "^[A-Za-z0-9_-][A-Za-z0-9._-]*(/[A-Za-z0-9_-][A-Za-z0-9._-]*)*$" },
+    "wasm": { "type": "string", "pattern": "^[A-Za-z0-9_-][A-Za-z0-9._-]*(/[A-Za-z0-9_-][A-Za-z0-9._-]*)*$" },
+    "min_host": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$" },
 
     "capabilities": {
       "type": "array",
@@ -112,7 +112,7 @@
         },
         "allOf": [
           { "if": { "properties": { "type": { "const": "choice" } }, "required": ["type"] }, "then": { "required": ["options"] } },
-          { "if": { "required": ["grant_network"] }, "then": { "properties": { "type": { "const": "url" } } } }
+          { "if": { "required": ["grant_network"], "properties": { "grant_network": { "const": true } } }, "then": { "properties": { "type": { "const": "url" } }, "not": { "required": ["default"] } } }
         ]
       }
     },
@@ -141,8 +141,8 @@
   "$defs": {
     "host": {
       "type": "string",
-      "description": "example.com, *.example.com, or http://example.com. No bare '*', no port, no path.",
-      "pattern": "^(http://)?(\\*\\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$"
+      "description": "example.com, *.example.com, or http://example.com. No bare '*', no IP literal (the last label starts with a letter), no port, no path. Wildcards over a public suffix are refused by the host and by the registry CI, which have the suffix list.",
+      "pattern": "^(http://)?(\\*\\.)?([a-z0-9]([a-z0-9-]*[a-z0-9])?\\.)+[a-z]([a-z0-9-]*[a-z0-9])?$"
     }
   }
 }
