@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mygo-music.github.io/plugin-sdk/schema/manifest.schema.json",
+  "title": "MyGo Music plugin manifest (api 1)",
+  "type": "object",
+  "required": ["api", "id", "name", "version", "description", "authors", "repository", "license", "icon", "wasm", "capabilities", "permissions"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "api": { "const": 1 },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,31}$",
+      "not": { "enum": ["mygo", "host", "core", "system", "local", "builtin", "dev"] }
+    },
+    "name": { "type": "string", "minLength": 1, "maxLength": 40 },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
+    },
+    "description": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "authors": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "github": { "type": "string", "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$" },
+          "url": { "type": "string", "format": "uri" }
+        }
+      }
+    },
+    "repository": { "type": "string", "format": "uri" },
+    "homepage": { "type": "string", "format": "uri" },
+    "license": { "type": "string", "minLength": 1 },
+    "icon": { "type": "string", "minLength": 1 },
+    "wasm": { "type": "string", "minLength": 1 },
+    "min_host": { "type": "string" },
+
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["search", "stream", "album", "artist", "playlist", "user", "lyrics",
+                 "account", "library", "feed", "radio", "comments", "podcast"]
+      }
+    },
+    "features": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": ["search.suggest", "like", "history", "playlist.edit", "playlist.subscribe", "follow",
+                 "podcast.subscribe", "radio.similar", "radio.dislike", "comments.like"]
+      }
+    },
+    "search_types": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["track", "album", "artist", "playlist", "user", "podcast"] }
+    },
+    "qualities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["standard", "higher", "exhigh", "lossless", "hires"] }
+    },
+
+    "permissions": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "network": {
+          "type": "object",
+          "properties": {
+            "hosts": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/host" } },
+            "local": { "type": "boolean" }
+          }
+        },
+        "media": {
+          "type": "object",
+          "properties": {
+            "hosts": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/host" } }
+          }
+        }
+      }
+    },
+
+    "settings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "type", "label"],
+        "properties": {
+          "key": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,31}$" },
+          "type": { "enum": ["text", "number", "bool", "choice", "url", "password"] },
+          "label": { "type": "string", "minLength": 1 },
+          "help": { "type": "string" },
+          "required": { "type": "boolean" },
+          "default": {},
+          "grant_network": { "type": "boolean" },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["value", "label"],
+              "properties": { "value": { "type": "string" }, "label": { "type": "string" } }
+            }
+          }
+        },
+        "allOf": [
+          { "if": { "properties": { "type": { "const": "choice" } }, "required": ["type"] }, "then": { "required": ["options"] } },
+          { "if": { "required": ["grant_network"] }, "then": { "properties": { "type": { "const": "url" } } } }
+        ]
+      }
+    },
+
+    "i18n": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "maxLength": 40 },
+          "description": { "type": "string", "maxLength": 200 }
+        }
+      }
+    }
+  },
+
+  "allOf": [
+    { "if": { "properties": { "capabilities": { "contains": { "const": "search" } } }, "required": ["capabilities"] },
+      "then": { "required": ["search_types"] } },
+    { "if": { "properties": { "capabilities": { "contains": { "const": "stream" } } }, "required": ["capabilities"] },
+      "then": { "required": ["qualities"] } },
+    { "if": { "properties": { "capabilities": { "contains": { "const": "library" } } }, "required": ["capabilities"] },
+      "then": { "properties": { "capabilities": { "contains": { "const": "account" } } } } }
+  ],
+
+  "$defs": {
+    "host": {
+      "type": "string",
+      "description": "example.com, *.example.com, or http://example.com. No bare '*', no port, no path.",
+      "pattern": "^(http://)?(\\*\\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$"
+    }
+  }
+}
